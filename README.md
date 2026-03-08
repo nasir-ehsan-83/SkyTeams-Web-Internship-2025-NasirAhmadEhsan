@@ -18,38 +18,33 @@ The main goal of this repository is to improve my skills in **web development**,
 
 ---
 
-## Repository Structure
-
-‍‍‍‍‍‍‍‍‍‍‍‍```
+## Repository Structu‍‍
+```
 SkyTeams-Web-Internship-2025-NasirAhmadEhsan
 │
-├── habit-tracker
-│ ├── backend
-│ │ ├── app
-│ │ ├── fastapi_offline_docs
-│ │ ├── fsapi
-│ │ └── requirements.txt
-│ │
-│ └── frontend
-│
-├── data_structure_algorithm
-│ ├── algorithm
-│ │ ├── week1
-│ │ ├── week2
-│ │ ├── week3
-│ │ └── week4
-│ │
-│ ├── data_structure
-│ │ ├── week5
-│ │ └── week6
-│ │
-│ └── tests
-│ ├── algorithm
-│ └── data_structure
-│
+├── habit-tracker/
+│   ├── backend/
+│   │   ├── app/
+│   │   ├── fastapi_offline_docs/
+│   │   └── requirements.txt
+│   └── frontend/
+├── data_structure_algorithm/
+│   ├── algorithm/
+│   │   ├── week1/
+│   │   ├── week2/
+│   │   ├── week3/
+│   │   └── week4/
+│   ├── data_structure/
+│   │   ├── week5/
+│   │   └── week6/
+│   └── tests/
+│       ├── algorithm/
+│       └── data_structure/
 ├── LICENSE
 └── README.md
+
 ```
+
 ---
 
 ## Algorithms and Data Structures

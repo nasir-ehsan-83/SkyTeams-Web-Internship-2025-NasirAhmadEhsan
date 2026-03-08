@@ -18,7 +18,7 @@ The main goal of this repository is to improve my skills in **web development**,
 
 ---
 
-## Repository Structu‍‍
+## Repository Structu‍‍re
 ```
 SkyTeams-Web-Internship-2025-NasirAhmadEhsan
 │

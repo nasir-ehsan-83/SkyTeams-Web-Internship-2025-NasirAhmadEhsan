@@ -4,6 +4,7 @@ from datetime import (
     datetime, 
     timedelta
 )
+from typing import Dict, List, Tuple
 from beanie import BeanieObjectId
 from fastapi import (
     HTTPException, 
@@ -33,6 +34,21 @@ from app.config import logger
 async def get_dashboard_service(
     timeframe:  Timeframe | None = None
 ) -> DashboardOut:
+
+    """Get user's dashboard.
+
+    Return user's informations and stats.
+
+    Args:
+        timeframe: 
+
+    Return:
+        DashboardOut: DashboradOut object with total-habits, active-habits,  compelation-rate,
+    best-habit, total-days-tracks
+
+    Raises:
+        HTTPException 500: If an internal server error occurs.
+    """
     
     try:
         total_habits = await Habit.count()
@@ -88,18 +104,18 @@ async def get_heatmap_service(
 ) -> HeatmapOut:
     
     try:
-        start_date = date(year, month, 1) if month else date(year, 1, 1)
-        end_date = date(year, month + 1, 1) - timedelta(days = 1) if month else date(year, 12, 31)
+        start_date: date = date(year, month, 1) if month else date(year, 1, 1)
+        end_date: date = date(year, month + 1, 1) - timedelta(days = 1) if month else date(year, 12, 31)
         
-        tracks = await Track.find(
+        tracks: Track | None = await Track.find(
             Track.date >= start_date,
             Track.date <= end_date
         ).to_list()
         
-        heatmap = defaultdict(int)
+        heatmap: Dict[int, int] = defaultdict(int)
 
         for track in tracks:
-            day = track.date.day
+            day: int = track.date.day
             heatmap[day] += 1
         
         return HeatmapOut(
@@ -128,7 +144,7 @@ async def get_progress_chart_service(
 ) -> ProgressChartOut:
     
     try:
-        habit = await Habit.get(habit_id)
+        habit: Habit | None = await Habit.get(habit_id)
         
         if not habit:
             raise HTTPException(
@@ -136,18 +152,19 @@ async def get_progress_chart_service(
                 detail = "Habit not found"
             )
         
-        start_date = date.today() - timedelta(days = period)
+        start_date: date = date.today() - timedelta(days = period)
         
-        tracks = await Track.find(
+        tracks: List[Track] = await Track.find(
             Track.habit_id == habit_id,
             Track.date >= start_date
         ).sort("date").to_list()
         
-        labels = []
-        values = []
-        track_dict = {track.date: 1 for track in tracks}
+        labels: List[date] = []
+        values: List[Dict[date, int]] = []
+        track_dict: Dict[date, int] = {track.date: 1 for track in tracks}
         
-        current_date = start_date
+        current_date: date = start_date
+
         while current_date <= date.today():
             labels.append(current_date)
             values.append(track_dict.get(current_date, 0))
@@ -179,7 +196,7 @@ async def get_distribution_service(
 ) -> DistributionOut:
     
     try:
-        habit = await Habit.get(habit_id)
+        habit: Habit | None = await Habit.get(habit_id)
         
         if not habit:
             raise HTTPException(
@@ -187,10 +204,11 @@ async def get_distribution_service(
                 detail = "Habit not found"
             )
         
-        tracks = await Track.find(Track.habit_id == habit_id).to_list()
+        tracks: List[Track] = await Track.find(Track.habit_id == habit_id).to_list()
         
-        distribution = defaultdict(int)
-        time_slots = [
+        distribution: Dict[str, int] = defaultdict(int)
+
+        time_slots: List[Tuple[str, int, int]] = [
             ("6-9", 6, 9),
             ("9-12", 9, 12),
             ("12-15", 12, 15),
@@ -201,7 +219,7 @@ async def get_distribution_service(
         for track in tracks:
             
             if track.created_at:
-                hour = track.created_at.hour
+                hour: int = track.created_at.hour
             
                 for slot_name, start, end in time_slots:
             
@@ -231,23 +249,23 @@ async def get_distribution_service(
 async def get_insights_service() -> InsightsOut:
     
     try:
-        insights = []
+        insights: List[str] = []
         
-        habits = await Habit.find().to_list()
-        total_habits = len(habits)
+        habits: List[Habit] = await Habit.find().to_list()
+        total_habits: int = len(habits)
         
         if total_habits > 0:
             insights.append(f"You have {total_habits} active habits")
         
-        top_streak = await Streak.find().sort("-current_streak").limit(1).to_list()
+        top_streak: List[Streak] = await Streak.find().sort("-current_streak").limit(1).to_list()
         
         if top_streak:
-            habit = await Habit.get(top_streak[0].habit_id)
+            habit: Habit | None = await Habit.get(top_streak[0].habit_id)
         
             if habit:
                 insights.append(f"Best streak: {top_streak[0].current_streak} days for {habit.title}")
         
-        tracks_today = await Track.find(Track.date == date.today()).count()
+        tracks_today: int = await Track.find(Track.date == date.today()).count()
         
         if tracks_today == 0:
             insights.append("You haven't tracked any habit today. Start now!")
@@ -255,21 +273,21 @@ async def get_insights_service() -> InsightsOut:
         else:
             insights.append(f"You've tracked {tracks_today} habits today")
         
-        weekday_tracks = defaultdict(int)
-        tracks = await Track.find().to_list()
+        weekday_tracks: Dict[int, int] = defaultdict(int)
+        tracks: List[Track] = await Track.find().to_list()
         
         for track in tracks:
-            weekday = track.date.weekday()
+            weekday: int = track.date.weekday()
             weekday_tracks[weekday] += 1
         
         if weekday_tracks:
             
-            best_day = max(weekday_tracks.items(), key = lambda x: x[1])[0]
-            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            best_day: int = max(weekday_tracks.items(), key = lambda x: x[1])[0]
+            days: List[str] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             insights.append(f"Your most productive day is {days[best_day]}")
         
         return InsightsOut(
-            insights=insights
+            insights = insights
         )
         
     except HTTPException:
@@ -293,7 +311,7 @@ async def export_data_service(
 ) -> ExportOut:
     
     try:
-        query = {}
+        query: Dict[str, Dict[str, date]] = {}
         
         if from_date:
             query["date"] = {"$gte": from_date}
@@ -301,9 +319,9 @@ async def export_data_service(
         if to_date:
             query["date"] = {"$lte": to_date}
         
-        tracks = await Track.find(query).to_list()
+        tracks: List[Track] = await Track.find(query).to_list()
         
-        export_data = []
+        export_data: List[Dict[str, str]] = []
         
         for track in tracks:
         

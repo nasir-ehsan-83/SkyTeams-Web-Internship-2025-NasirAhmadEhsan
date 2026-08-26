@@ -2,6 +2,7 @@ from datetime import (
     datetime, 
     timedelta
 )
+from typing import Dict, List
 from fastapi import (
     HTTPException, 
     status
@@ -36,7 +37,7 @@ async def create_schedule_service(
 ) -> ScheduleOut:
     
     try:
-        habit = await Habit.get(schedule_in.habit_id)
+        habit: Habit | None = await Habit.get(schedule_in.habit_id)
        
         if not habit:
             raise HTTPException(
@@ -44,8 +45,8 @@ async def create_schedule_service(
                 detail = "Habit not found"
             )
         
-        now = datetime.now()
-        trigger_time = datetime.combine(now.date(), datetime.strptime(schedule_in.time, "%H:%M").time())
+        now: datetime = datetime.now()
+        trigger_time: datetime = datetime.combine(now.date(), datetime.strptime(schedule_in.time, "%H:%M").time())
         
         if trigger_time <= now:
             trigger_time += timedelta(days=1)
@@ -94,7 +95,7 @@ async def update_schedule_service(
 ) -> MessageOut:
     
     try:
-        notification = await Notification.find_one({
+        notification: Dict[str, BeanieObjectId] = await Notification.find_one({
             "_id": schedule_id,
             "owner_id": owner_id
         })
@@ -108,8 +109,8 @@ async def update_schedule_service(
         if schedule_in.time is not None:
             notification.time = schedule_in.time
             
-            now = datetime.now()
-            trigger_time = datetime.combine(now.date(), datetime.strptime(schedule_in.time, "%H:%M").time())
+            now: datetime = datetime.now()
+            trigger_time: datetime = datetime.combine(now.date(), datetime.strptime(schedule_in.time, "%H:%M").time())
             
             if trigger_time <= now:
                 trigger_time += timedelta(days=1)
@@ -149,7 +150,7 @@ async def delete_schedule_service(
     
     try:
         
-        notification = await Notification.find_one({
+        notification: Dict[str, BeanieObjectId] = await Notification.find_one({
             "_id": schedule_id,
             "owner_id": owner_id
         })
@@ -185,7 +186,7 @@ async def get_settings_service(
 ) -> SettingsOut:
     
     try:
-        settings = await NotificationSettings.find_one({"owner_id": owner_id})
+        settings: NotificationSettings | None = await NotificationSettings.find_one({"owner_id": owner_id})
         
         if not settings:
             return SettingsOut(
@@ -222,10 +223,10 @@ async def update_settings_service(
 ) -> MessageOut:
     
     try:
-        settings = await NotificationSettings.find_one({"owner_id": owner_id})
+        settings: NotificationSettings | None = await NotificationSettings.find_one({"owner_id": owner_id})
         
         if not settings:
-            settings = NotificationSettings(owner_id = owner_id)
+            settings: NotificationSettings = NotificationSettings(owner_id = owner_id)
         
         if settings_in.push_enabled is not None:
             settings.push_enabled = settings_in.push_enabled
@@ -265,9 +266,8 @@ async def send_test_notification_service(
 ) -> TestNotificationOut:
     
     try:
-        logger.info(f"Sending test {test_in.type} notification to user {owner_id}: {test_in.message}")
-        
-        notification = Notification(
+
+        notification: Notification = Notification(
             owner_id = owner_id,
             habit_id = BeanieObjectId(),
             time = datetime.now().strftime("%H:%M"),
@@ -308,12 +308,12 @@ async def get_notification_history_service(
 ) -> NotificationHistoryOut:
     
     try:
-        notifications = await Notification.find({
+        notifications: Notification | None = await Notification.find({
             "owner_id": owner_id,
             "sent_at": {"$ne": None}
         }).sort("-sent_at").limit(limit).to_list()
         
-        notification_items = []
+        notification_items: List[NotificationItemOut] = []
         for notif in notifications:
            
             notification_items.append(
@@ -327,7 +327,7 @@ async def get_notification_history_service(
                 )
             )
         
-        total = await Notification.find({"owner_id": owner_id}).count()
+        total: int = await Notification.find({"owner_id": owner_id}).count()
         
         return NotificationHistoryOut(
             notifications = notification_items,

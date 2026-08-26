@@ -71,13 +71,13 @@ async def create_user_service(
     """
 
     try:
-        new_user = User(
+        new_user: User = User(
             **user.model_dump(exclude = {"password"}),
             password = await hash_password(user.password)
         )
-        saved_user = await new_user.insert()
+        saved_user: User = await new_user.insert()
 
-        default_preference = UserPreference(owner_id = saved_user.id)
+        default_preference: UserPreference = UserPreference(owner_id = saved_user.id)
         await default_preference.insert()
 
         return saved_user
@@ -124,7 +124,7 @@ async def login_service(
     """
 
     try:
-        user = await User.find_one(User.username == user_credential.username)
+        user: User | None = await User.find_one(User.username == user_credential.username)
 
         if not user or not await verify_password(user_credential.password, user.password):
             
@@ -144,8 +144,8 @@ async def login_service(
             "role": user.role
         }
 
-        access_token = await create_access_token(user_payload)
-        refresh_token = await create_refresh_token(user_payload)
+        access_token: str= await create_access_token(user_payload)
+        refresh_token: str = await create_refresh_token(user_payload)
 
         await redis_client.set(
             name = f"{REDIS_REFRESH_PREFIX}{user.id}",
@@ -204,7 +204,7 @@ async def refresh_token_service(
     """
 
     try:
-        refresh_token = request.cookies.get("jwt")
+        refresh_token: str | None = request.cookies.get("jwt")
 
         if not refresh_token:
             raise HTTPException(
@@ -213,7 +213,7 @@ async def refresh_token_service(
             )
 
         payload: Dict[str, Any] = await verify_refresh_token(refresh_token)
-        saved_token = await redis_client.get(f"{REDIS_REFRESH_PREFIX}{payload['id']}")
+        saved_token: bytes | None = await redis_client.get(f"{REDIS_REFRESH_PREFIX}{payload['id']}")
 
         if isinstance(saved_token, bytes):
             saved_token = saved_token.decode("utf-8")
@@ -225,7 +225,7 @@ async def refresh_token_service(
                 detail = "Token expired or blacklisted"
             )
 
-        new_access_token = await create_access_token({
+        new_access_token: str = await create_access_token({
             "id": payload["id"],
             "role": payload["role"]
         })
@@ -265,13 +265,13 @@ async def logout_service(
         Response: Response with cleared cookies.
     """
 
-    refresh_token = request.cookies.get("jwt")
-    auth_header = request.headers.get("Authorization")
-    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    refresh_token: str | None = request.cookies.get("jwt")
+    auth_header: str | None = request.headers.get("Authorization")
+    response: Response = Response(status_code=status.HTTP_204_NO_CONTENT)
 
     if refresh_token:
         try:
-            payload = await verify_refresh_token(refresh_token)
+            payload: Dict[str, Any] = await verify_refresh_token(refresh_token)
             await redis_client.delete(f"{REDIS_REFRESH_PREFIX}{payload['id']}")
         
         except Exception:
@@ -279,7 +279,7 @@ async def logout_service(
 
     if auth_header and auth_header.startswith("Bearer "):
         try:
-            access_token = auth_header.split(" ")[1]
+            access_token: str = auth_header.split(" ")[1]
             
             await redis_client.set(
                 name = f"{REDIS_BLACKLIST_PREFIX}{access_token}",
@@ -317,14 +317,14 @@ async def delete_account_service(
     """
 
     try:
-        refresh_token = request.cookies.get("jwt")
-        auth_header = request.headers.get("Authorization")
+        refresh_token: str | None = request.cookies.get("jwt")
+        auth_header: str | None = request.headers.get("Authorization")
 
         if not refresh_token:
             raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED)
 
-        payload = await verify_refresh_token(refresh_token)
-        user = await User.get(BeanieObjectId(payload["id"]))
+        payload: Dict[str, Any] = await verify_refresh_token(refresh_token)
+        user: User | None = await User.get(BeanieObjectId(payload["id"]))
 
         if not user:
             raise HTTPException(
@@ -333,7 +333,7 @@ async def delete_account_service(
             )
 
         if auth_header and auth_header.startswith("Bearer "):
-            access_token = auth_header.split(" ")[1]
+            access_token: str = auth_header.split(" ")[1]
             
             await redis_client.set(
                 name = f"{REDIS_BLACKLIST_PREFIX}{access_token}",
@@ -344,7 +344,7 @@ async def delete_account_service(
         await redis_client.delete(f"{REDIS_REFRESH_PREFIX}{user.id}")
         await user.delete()
 
-        response = Response(status_code = status.HTTP_204_NO_CONTENT)
+        response: Response = Response(status_code = status.HTTP_204_NO_CONTENT)
         response.delete_cookie("jwt")
 
         return response
@@ -383,15 +383,15 @@ async def forget_password_service(
     """
 
     try:
-        user = await User.find_one(User.email == email)
+        user: User | None = await User.find_one(User.email == email)
 
         if not user:
             return {
                 "message": "Verification code sent successfully"
             }
 
-        verify_code = await generate_code()
-        hashed_code = await hash_token(verify_code)
+        verify_code: str = await generate_code()
+        hashed_code: str = await hash_token(verify_code)
 
         await redis_client.set(
             name = f"{REDIS_VERIFY_CODE_PREFIX}{email}",
@@ -449,12 +449,12 @@ async def verify_email_service(
                 detail = "User not found"
             )
 
-        saved_code = await redis_client.get(f"{REDIS_VERIFY_CODE_PREFIX}{data.email}")
+        saved_code: str | None = await redis_client.get(f"{REDIS_VERIFY_CODE_PREFIX}{data.email}")
 
         if isinstance(saved_code, bytes):
             saved_code = saved_code.decode("utf-8")
 
-        hashed_input_code = await hash_token(data.verify_code)
+        hashed_input_code: str = await hash_token(data.verify_code)
 
         if not saved_code or saved_code != hashed_input_code:
             raise HTTPException(
@@ -464,8 +464,8 @@ async def verify_email_service(
 
         await redis_client.delete(f"{REDIS_VERIFY_CODE_PREFIX}{data.email}")
 
-        verify_token = await generate_token()
-        hashed_token = await hash_token(verify_token)
+        verify_token: str = await generate_token()
+        hashed_token: str = await hash_token(verify_token)
 
         await redis_client.set(
             name = f"{REDIS_VERIFY_TOKEN_PREFIX}{data.email}",
@@ -519,12 +519,12 @@ async def reset_password_service(
                 detail = "User not found"
             )
 
-        saved_token = await redis_client.get(f"{REDIS_VERIFY_TOKEN_PREFIX}{data.email}")
+        saved_token: str | None = await redis_client.get(f"{REDIS_VERIFY_TOKEN_PREFIX}{data.email}")
 
         if isinstance(saved_token, bytes):
             saved_token = saved_token.decode("utf-8")
 
-        hashed_input_token = await hash_token(data.verify_token)
+        hashed_input_token: str = await hash_token(data.verify_token)
 
         if not saved_token or saved_token != hashed_input_token:
             raise HTTPException(
@@ -535,7 +535,7 @@ async def reset_password_service(
         await redis_client.delete(f"{REDIS_VERIFY_TOKEN_PREFIX}{data.email}")
         await redis_client.delete(f"{REDIS_REFRESH_PREFIX}{user.id}")
 
-        new_hashed_password = await hash_password(data.new_password)
+        new_hashed_password: str = await hash_password(data.new_password)
 
         await user.set({
             "password": new_hashed_password
@@ -553,4 +553,3 @@ async def reset_password_service(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
-    

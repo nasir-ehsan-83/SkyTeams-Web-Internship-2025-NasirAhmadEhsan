@@ -104,7 +104,7 @@ async def update_streak_service(
 ) -> None:
     
     try:
-        streak = await Streak.find_one({
+        streak: Streak | None = await Streak.find_one({
             "owner_id": owner_id,
             "habit_id": habit_id
         })
@@ -121,6 +121,8 @@ async def update_streak_service(
             )
             await new_streak.insert() # type: ignore
             return
+        
+        day_diff: int
         
         if streak.last_tracked:
             day_diff = (track_date - streak.last_tracked).days

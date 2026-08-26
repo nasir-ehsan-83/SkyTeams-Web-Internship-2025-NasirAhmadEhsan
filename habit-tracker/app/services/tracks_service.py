@@ -29,7 +29,7 @@ async def create_track_service(
     
     try:
         track_data: Dict[str, Any] = track_in.model_dump(exclude_unset = True)
-        track_date = track_data.get("date")
+        track_date: date | None = track_data.get("date")
         
         if track_date is None:
             raise HTTPException(
@@ -37,7 +37,7 @@ async def create_track_service(
                 detail = "Date is required"
             )
         
-        query: Dict[str, Any] = {
+        query: Dict[str, BeanieObjectId | date] = {
             "owner_id": owner_id,
             "habit_id": track_in.habit_id,
             "date": track_date
@@ -56,7 +56,7 @@ async def create_track_service(
             owner_id = owner_id
         )
 
-        created_track = await new_track.insert() # type: ignore
+        created_track: Track = await new_track.insert() # type: ignore
         
         await update_streak_service(
             owner_id = owner_id,
@@ -86,7 +86,7 @@ async def update_track_service(
     updated_data: TrackUpdate
 ) -> Track:
     try:
-        track = await Track.find_one(
+        track: Track | None = await Track.find_one(
             Track.id == id,
             Track.owner_id == owner_id
         )
@@ -122,7 +122,7 @@ async def delete_track_service(
     owner_id: BeanieObjectId
 ) -> Response:
     try:
-        track = await Track.get(id)
+        track: Track | None = await Track.get(id)
 
         if not track:
             raise HTTPException(
@@ -161,7 +161,7 @@ async def get_daily_tracks_service(
 
 ) -> List[Track]:
     try:
-        query: Dict[str, Any] = {
+        query: Dict[str, BeanieObjectId | date] = {
             "owner_id": owner_id,
             "date": target_date
 
@@ -170,7 +170,7 @@ async def get_daily_tracks_service(
         if habit_id is not None:
             query["habit_id"] = habit_id
 
-        tracks = await Track.find(query).to_list()
+        tracks: List[Track] = await Track.find(query).to_list()
 
         return tracks
     
@@ -201,7 +201,7 @@ async def get_track_history_service(
                 detail = "Invalid date range. History range must be at least 7 days."
             )
         
-        query: Dict[str, Any] = {
+        query: Dict[str, BeanieObjectId | Dict[str, date]] = {
             "owner_id": owner_id,
             "habit_id": habit_id,
             "date": {
@@ -210,7 +210,7 @@ async def get_track_history_service(
             }
         }
 
-        tracks = await Track.find(query).to_list()
+        tracks: List[Track] = await Track.find(query).to_list()
 
         return tracks
     
@@ -234,14 +234,16 @@ async def get_missed_days_service(
 ) -> MissedDaysResponse: 
     
     try:
-        query = {"owner_id": owner_id}
-        response_data = {}
+        query: Dict[str, BeanieObjectId] = {
+            "owner_id": owner_id
+        }
+        response_data: Dict[str, BeanieObjectId | List[date]] = {}
 
         if habit_id:
             query["habit_id"] = habit_id
             response_data["habit_id"] = habit_id
 
-        tracks = await Track.find(query).to_list()
+        tracks: List[Track] = await Track.find(query).to_list()
 
         missed_days_list: List[date] = [track.date for track in tracks] 
 

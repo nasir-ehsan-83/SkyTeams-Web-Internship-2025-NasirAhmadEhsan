@@ -34,7 +34,7 @@ async def get_user_service(
 ) -> User:
     try:
 
-        user = await User.find_one(
+        user: User | None = await User.find_one(
             User.id == BeanieObjectId(id),
             User.status == "active"
         )
@@ -67,7 +67,7 @@ async def update_user_service(
 ) -> User:
     
     try:
-        user = await User.find_one(
+        user: User | None = await User.find_one(
             User.id == BeanieObjectId(id),
             User.status == "active"
         )
@@ -78,7 +78,7 @@ async def update_user_service(
                 detail = "User not found"
             )
         
-        update_data = data.model_dump(
+        update_data: Dict[str, Any] = data.model_dump(
             exclude_unset = True, 
             exclude_none = True
         )
@@ -116,7 +116,7 @@ async def update_avatar_service(
     
     try:
 
-        user = await User.find_one(
+        user: User | None = await User.find_one(
             User.id == BeanieObjectId(id),
             User.status == "active"
         )
@@ -153,7 +153,7 @@ async def get_stats_service(
 ) -> Tuple[User, List[Habit]]:
     
     try:
-        user = await User.find_one(
+        user: User | None = await User.find_one(
             User.id == BeanieObjectId(id),
             User.status == "active"
         )
@@ -187,7 +187,7 @@ async def get_preference_service(
     owner_id: BeanieObjectId
 ) -> UserPreference:
     try:
-        preference = await UserPreference.find_one(UserPreference.owner_id == owner_id)
+        preference: UserPreference | None = await UserPreference.find_one(UserPreference.owner_id == owner_id)
 
         if not preference:
             raise HTTPException(
@@ -216,7 +216,7 @@ async def update_preference_service(
     preference_data: PreferenceUpdate
 ) -> UserPreference:
     try:
-        preference = await UserPreference.find_one(UserPreference.owner_id == user_id)
+        preference: UserPreference | None = await UserPreference.find_one(UserPreference.owner_id == user_id)
 
         if not preference:
             raise HTTPException(

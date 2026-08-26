@@ -242,13 +242,13 @@ async def get_app_stats_service() -> AppStatsOut:
 
     try:
 
-        total_users = await User.count()
+        total_users: int = await User.count()
 
-        active_users = await User.find(User.status == "active" ).count()
+        active_users: int = await User.find(User.status == "active" ).count()
 
-        total_habits = await Habit.count()
+        total_habits: int = await Habit.count()
 
-        total_streaks = await Streak.count()
+        total_streaks: int = await Streak.count()
 
         return AppStatsOut(
             total_users = total_users,

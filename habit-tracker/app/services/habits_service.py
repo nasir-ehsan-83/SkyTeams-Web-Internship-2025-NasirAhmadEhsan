@@ -123,7 +123,7 @@ async def get_habit_service(
 ) -> Habit:
     try:
         
-        existing_habit = await Habit.find_one(
+        existing_habit: Habit | None = await Habit.find_one(
             Habit.id == habit_id,
             Habit.owner_id == owner_id,
             Habit.status != "deleted"   
@@ -183,7 +183,7 @@ async def update_habit_service(
 ) -> Habit:
     try:
         
-        existing_habit = await Habit.find_one(
+        existing_habit: Habit | None = await Habit.find_one(
             Habit._class_id == habit_id,
             Habit.owner_id == owner_id,
             Habit.status != "deleted"
@@ -195,7 +195,7 @@ async def update_habit_service(
                 detail = "Habit not found"
             )
         
-        update_data = update_habit.model_dump(
+        update_data: Dict[str, Any] = update_habit.model_dump(
             exclude_unset = True, 
             exclude_none = True
         )
@@ -229,7 +229,7 @@ async def delete_habit_service(
 ) -> Response:
     try:
     
-        existing_habit = await Habit.find_one(
+        existing_habit: Habit | None = await Habit.find_one(
             Habit.id == habit_id,
             Habit.owner_id == owner_id,
             Habit.status != "deleted"
@@ -268,7 +268,7 @@ async def archive_habit_service(
     
     try:
 
-        habit = await Habit.find_one(
+        habit: Habit | None = await Habit.find_one(
             Habit.id == habit_id,
             Habit.owner_id == owner_id,
             Habit.status != "deleted"
@@ -308,7 +308,7 @@ async def unarchive_habit_service(
 ) -> Dict[str, str]:
     
     try:
-        habit = await Habit.find_one(
+        habit: Habit | None = await Habit.find_one(
             Habit.id == habit_id,
             Habit.owner_id == owner_id,
             Habit.status != "archived"

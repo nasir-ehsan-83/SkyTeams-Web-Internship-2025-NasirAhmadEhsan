@@ -18,12 +18,12 @@ async def send_email(
             logger.error("SMTP credentials are not set")
             return
 
-        message = MIMEMultipart()
+        message: MIMEMultipart = MIMEMultipart()
         message["From"] = settings.SMTP_USER
         message["To"] = email
         message["Subject"] = "🔐 Account Verification Code"
 
-        html_body = f"""
+        html_body: str = f"""
         <!DOCTYPE html>
         <html dir="ltr" lang="en">
         <head>

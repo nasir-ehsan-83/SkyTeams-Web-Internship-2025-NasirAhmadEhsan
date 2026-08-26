@@ -1,5 +1,8 @@
 from hashlib import sha256
-import asyncio
+from asyncio import (
+    AbstractEventLoop, 
+    get_running_loop
+)
 import secrets
 
 
@@ -14,8 +17,8 @@ async def generate_token() -> str:
 async def hash_token(
     token: str | int
 ) -> str:
-    loop = asyncio.get_running_loop()
-    token_str = str(token)
+    loop: AbstractEventLoop = get_running_loop()
+    token_str: str = str(token)
     
     return await loop.run_in_executor(
         None,

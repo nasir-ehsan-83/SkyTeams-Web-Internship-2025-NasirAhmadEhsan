@@ -12,11 +12,11 @@ password_context = CryptContext(
 
 
 async def hash_password(password: str) -> str:
-    password_bytes = password.encode("utf-8")[:72]
+    password_bytes: bytes = password.encode("utf-8")[:72]
 
-    password_truncated = password_bytes.decode(
+    password_truncated: str = password_bytes.decode(
         "utf-8", 
-        errors="ignore"
+        errors = "ignore"
     )
 
     return await run_in_threadpool(

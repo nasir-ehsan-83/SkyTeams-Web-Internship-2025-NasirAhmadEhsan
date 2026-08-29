@@ -35,19 +35,21 @@ async def get_dashboard_service(
     timeframe:  Timeframe | None = None
 ) -> DashboardOut:
 
-    """Get user's dashboard.
+    """Retrieves comprehensive dashboard analytics for the authenticated user.
 
-    Return user's informations and stats.
+    This service aggregates key metrics from the database to provide an
+    overview of the user's performance and activity statistics.
 
     Args:
-        timeframe: 
+        timeframe: Optional time period for analytics aggregation 
+            (DAY, WEEK, MONTH, YEAR). If not provided, uses default aggregation.
 
-    Return:
-        DashboardOut: DashboradOut object with total-habits, active-habits,  compelation-rate,
-    best-habit, total-days-tracks
-
+    Returns:
+        DashboardOut: Dashboard analytics containing: total_habits, active_habits, completion_rate, best_habit and total_days_tracked 
+         
     Raises:
-        HTTPException 500: If an internal server error occurs.
+        HTTPException 500: If an internal server error occurs during 
+            database operations.
     """
     
     try:
@@ -103,11 +105,29 @@ async def get_heatmap_service(
     month:  int | None = None
 ) -> HeatmapOut:
     
+    """Retrieves heatmap data showing habit completion intensity over time.
+
+    This service provides visual representation of user's habit completion
+    patterns, displaying daily activity levels for the specified time period.
+
+    Args:
+        year: The year for which to retrieve heatmap data.
+        month: Optional month (1-12) for focused monthly view. 
+            If None, returns data for the entire year.
+
+    Returns:
+        HeatmapOut: Heatmap data containing:, heatmap, year and month
+
+    Raises:
+        HTTPException 500: If an internal server error occurs during 
+            database operations.
+    """
+    
     try:
         start_date: date = date(year, month, 1) if month else date(year, 1, 1)
         end_date: date = date(year, month + 1, 1) - timedelta(days = 1) if month else date(year, 12, 31)
         
-        tracks: Track | None = await Track.find(
+        tracks: List[Track] = await Track.find(
             Track.date >= start_date,
             Track.date <= end_date
         ).to_list()
@@ -143,6 +163,24 @@ async def get_progress_chart_service(
     period:     int = 90
 ) -> ProgressChartOut:
     
+    """Retrieves progress chart data for a specific habit over time.
+
+    This service provides trend analysis for a habit, showing completion
+    patterns and performance metrics over the specified period.
+
+    Args:
+        habit_id: The MongoDB ObjectId of the habit to analyze.
+        period: Number of days to include in the chart (1-365). Defaults to 90.
+
+    Returns:
+        ProgressChartOut: Progress chart data containing: labels, values, target_line and habit_title
+
+    Raises:
+        HTTPException 404: If habit not found.
+        HTTPException 500: If an internal server error occurs during 
+            database operations.
+    """
+    
     try:
         habit: Habit | None = await Habit.get(habit_id)
         
@@ -160,7 +198,7 @@ async def get_progress_chart_service(
         ).sort("date").to_list()
         
         labels: List[date] = []
-        values: List[Dict[date, int]] = []
+        values: List[int] = []
         track_dict: Dict[date, int] = {track.date: 1 for track in tracks}
         
         current_date: date = start_date
@@ -194,6 +232,23 @@ async def get_progress_chart_service(
 async def get_distribution_service(
     habit_id:   BeanieObjectId
 ) -> DistributionOut:
+    
+    """Retrieves distribution analytics for a specific habit.
+
+    This service provides insights into how habit completions are distributed
+    across different time slots of the day.
+
+    Args:
+        habit_id: The MongoDB ObjectId of the habit to analyze.
+
+    Returns:
+        DistributionOut: Distribution data containing: distribution and habit_title
+
+    Raises:
+        HTTPException 404: If habit not found.
+        HTTPException 500: If an internal server error occurs during 
+            database operations.
+    """
     
     try:
         habit: Habit | None = await Habit.get(habit_id)
@@ -247,6 +302,20 @@ async def get_distribution_service(
 
 
 async def get_insights_service() -> InsightsOut:
+    
+    """Retrieves personalized insights and recommendations for the user.
+
+    This service analyzes the user's habit tracking data to provide
+    meaningful insights, patterns, and actionable recommendations for
+    improving habit consistency and performance.
+
+    Returns:
+        InsightsOut: Personalized insights containing: insights and generated_at
+
+    Raises:
+        HTTPException 500: If an internal server error occurs during 
+            database operations.
+    """
     
     try:
         insights: List[str] = []
@@ -310,6 +379,25 @@ async def export_data_service(
     to_date:    date | None = None
 ) -> ExportOut:
     
+    """Exports the user's habit tracking data in the specified format.
+
+    This service allows users to export their habit data for backup,
+    analysis, or migration purposes. Data can be filtered by date range
+    and exported in JSON or CSV format.
+
+    Args:
+        format: Export format - either 'json' or 'csv'.
+        from_date: Optional start date for data inclusion (YYYY-MM-DD).
+        to_date: Optional end date for data inclusion (YYYY-MM-DD).
+
+    Returns:
+        ExportOut: Export data containing: download_url, format, expire_at
+
+    Raises:
+        HTTPException 500: If an internal server error occurs during 
+            data export operations.
+    """
+    
     try:
         query: Dict[str, Dict[str, date]] = {}
         
@@ -321,7 +409,7 @@ async def export_data_service(
         
         tracks: List[Track] = await Track.find(query).to_list()
         
-        export_data: List[Dict[str, str]] = []
+        export_data: List[Dict[str, str | None]] = []
         
         for track in tracks:
         

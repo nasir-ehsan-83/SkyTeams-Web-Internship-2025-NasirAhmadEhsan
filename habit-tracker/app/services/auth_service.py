@@ -77,7 +77,7 @@ async def create_user_service(
         )
         saved_user: User = await new_user.insert()
 
-        default_preference: UserPreference = UserPreference(owner_id = saved_user.id)
+        default_preference: UserPreference = UserPreference(owner_id = saved_user.id) # type: ignore
         await default_preference.insert()
 
         return saved_user
@@ -136,7 +136,7 @@ async def login_service(
         if user.status != "active":
             raise HTTPException(
                 status_code = status.HTTP_403_FORBIDDEN,
-                detai = "User account is inactive"
+                detail = "User account is inactive"
             )
 
         user_payload: Dict[str, Any] = {
@@ -216,7 +216,7 @@ async def refresh_token_service(
         saved_token: bytes | None = await redis_client.get(f"{REDIS_REFRESH_PREFIX}{payload['id']}")
 
         if isinstance(saved_token, bytes):
-            saved_token = saved_token.decode("utf-8")
+            saved_token = saved_token.decode("utf-8") # type: ignore
 
         if not saved_token or saved_token != refresh_token:
            
@@ -390,7 +390,7 @@ async def forget_password_service(
                 "message": "Verification code sent successfully"
             }
 
-        verify_code: str = await generate_code()
+        verify_code: int = await generate_code()
         hashed_code: str = await hash_token(verify_code)
 
         await redis_client.set(

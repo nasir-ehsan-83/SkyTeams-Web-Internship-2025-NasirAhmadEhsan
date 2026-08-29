@@ -27,6 +27,28 @@ async def create_track_service(
     track_in: TrackCreate
 ) -> Track:
     
+    """Creates a new track record for a habit completion.
+
+    This service creates a track record for a habit completion on a specific date.
+    After creating the track, it automatically updates the user's streak.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user creating the track.
+        track_in: Track creation data 
+
+    Returns:
+        Track: The created track record with all fields populated.
+
+    Raises:
+        HTTPException 400: If date is not provided in the request.
+        HTTPException 409: If a track already exists for this date and habit.
+        HTTPException 500: If an internal server error occurs.
+
+    Note:
+        This service automatically calls update_streak_service to maintain
+        the user's streak consistency.
+    """
+    
     try:
         track_data: Dict[str, Any] = track_in.model_dump(exclude_unset = True)
         track_date: date | None = track_data.get("date")
@@ -85,6 +107,25 @@ async def update_track_service(
     owner_id: BeanieObjectId,
     updated_data: TrackUpdate
 ) -> Track:
+    
+    """Updates an existing track record.
+
+    This service allows users to modify their habit tracking records,
+    such as changing completion status, updating notes, or modifying dates.
+
+    Args:
+        id: The MongoDB ObjectId of the track to update.
+        owner_id: The MongoDB ObjectId of the user owning the track.
+        updated_data: Updated track fields (all optional)
+
+    Returns:
+        Track: The updated track record with all fields.
+
+    Raises:
+        HTTPException 404: If the track is not found.
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         track: Track | None = await Track.find_one(
             Track.id == id,
@@ -121,6 +162,25 @@ async def delete_track_service(
     id: BeanieObjectId,
     owner_id: BeanieObjectId
 ) -> Response:
+    
+    """Permanently deletes a track record.
+
+    This service removes a track record from the system. This action
+    cannot be undone and may affect streak calculations.
+
+    Args:
+        id: The MongoDB ObjectId of the track to delete.
+        owner_id: The MongoDB ObjectId of the user owning the track.
+
+    Returns:
+        Response: Empty response with status code 204 (No Content) on success.
+
+    Raises:
+        HTTPException 404: If the track is not found.
+        HTTPException 403: If the user doesn't have permission to delete the track.
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         track: Track | None = await Track.get(id)
 
@@ -160,6 +220,25 @@ async def get_daily_tracks_service(
     target_date:    date
 
 ) -> List[Track]:
+    
+    """Retrieves all tracks for a specific date.
+
+    This service returns all habit tracking records for a given date,
+    optionally filtered by habit ID.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+        habit_id: Optional habit ID to filter tracks by a specific habit.
+        target_date: The date to retrieve tracks for.
+
+    Returns:
+        List[Track]: List of track records for the specified date,
+            sorted by creation time.
+
+    Raises:
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         query: Dict[str, BeanieObjectId | date] = {
             "owner_id": owner_id,
@@ -194,6 +273,27 @@ async def get_track_history_service(
     from_date: date,
     to_date: date
 ) -> List[Track]:
+    
+    """Retrieves track history for a specific habit within a date range.
+
+    This service provides a chronological history of all tracks for a
+    habit within the specified date range, useful for progress analysis.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+        habit_id: The MongoDB ObjectId of the habit to retrieve history for.
+        from_date: Start date for the history range .
+        to_date: End date for the history range.
+
+    Returns:
+        List[Track]: List of track records within the date range,
+            ordered by completion_date ascending.
+
+    Raises:
+        HTTPException 400: If the date range is less than 7 days.
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         if (to_date - from_date).days < 7:
             raise HTTPException(
@@ -233,6 +333,24 @@ async def get_missed_days_service(
     habit_id: BeanieObjectId | None
 ) -> MissedDaysResponse: 
     
+    """Retrieves a list of days where habit completions were missed.
+
+    This service analyzes the user's tracking data to identify days
+    where habits were not completed, helping users identify patterns
+    and areas for improvement.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+        habit_id: Optional habit ID to filter missed days for a specific habit.
+            If not provided, returns missed days across all habits.
+
+    Returns:
+        MissedDaysResponse: Missed days informations
+
+    Raises:
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         query: Dict[str, BeanieObjectId] = {
             "owner_id": owner_id
@@ -249,7 +367,7 @@ async def get_missed_days_service(
 
         response_data["missed_days"] = missed_days_list
 
-        return MissedDaysResponse(**response_data)
+        return MissedDaysResponse(**response_data) # type: ignore
         
     except HTTPException:
         raise

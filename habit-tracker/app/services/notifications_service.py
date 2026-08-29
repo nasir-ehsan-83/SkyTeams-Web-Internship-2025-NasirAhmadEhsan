@@ -2,7 +2,7 @@ from datetime import (
     datetime, 
     timedelta
 )
-from typing import Dict, List
+from typing import List
 from fastapi import (
     HTTPException, 
     status
@@ -35,6 +35,23 @@ async def create_schedule_service(
     owner_id:       BeanieObjectId,
     schedule_in:    ScheduleCreate
 ) -> ScheduleOut:
+    
+    """Creates a new notification schedule for a habit.
+
+    This service creates a scheduled notification for a habit, setting up
+    the trigger time and frequency for reminders.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user creating the schedule.
+        schedule_in: The pydantic model to create a user's schedule
+
+    Returns:
+        ScheduleOut: The created schedule with all details
+
+    Raises:
+        HTTPException 404: If the habit is not found.
+        HTTPException 500: If an internal server error occurs.
+    """
     
     try:
         habit: Habit | None = await Habit.get(schedule_in.habit_id)
@@ -94,8 +111,26 @@ async def update_schedule_service(
     schedule_in:    ScheduleUpdate
 ) -> MessageOut:
     
+    """Updates an existing notification schedule.
+
+    This service allows users to modify their notification schedule
+    including time, days, and active status.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user owning the schedule.
+        schedule_id: The MongoDB ObjectId of the schedule to update.
+        schedule_in: Updated schedule fields (all optional)
+
+    Returns:
+        MessageOut: Success message confirming the update.
+
+    Raises:
+        HTTPException 404: If the schedule is not found.
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
-        notification: Dict[str, BeanieObjectId] = await Notification.find_one({
+        notification: Notification | None = await Notification.find_one({
             "_id": schedule_id,
             "owner_id": owner_id
         })
@@ -148,9 +183,25 @@ async def delete_schedule_service(
     schedule_id:    BeanieObjectId
 ) -> MessageOut:
     
+    """Permanently deletes a notification schedule.
+
+    This service removes a notification schedule from the system.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user owning the schedule.
+        schedule_id: The MongoDB ObjectId of the schedule to delete.
+
+    Returns:
+        MessageOut: Success message confirming the deletion.
+
+    Raises:
+        HTTPException 404: If the schedule is not found.
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         
-        notification: Dict[str, BeanieObjectId] = await Notification.find_one({
+        notification: Notification | None = await Notification.find_one({
             "_id": schedule_id,
             "owner_id": owner_id
         })
@@ -184,6 +235,22 @@ async def delete_schedule_service(
 async def get_settings_service(
     owner_id:   BeanieObjectId
 ) -> SettingsOut:
+    
+    """Retrieves the user's notification settings.
+
+    This service returns the user's notification preferences including
+    enabled channels and reminder settings. If no settings exist,
+    default values are returned.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+
+    Returns:
+        SettingsOut: User's notification settings
+
+    Raises:
+        HTTPException 500: If an internal server error occurs.
+    """
     
     try:
         settings: NotificationSettings | None = await NotificationSettings.find_one({"owner_id": owner_id})
@@ -222,11 +289,28 @@ async def update_settings_service(
     settings_in:    SettingsUpdate
 ) -> MessageOut:
     
+    """Updates the user's notification settings.
+
+    This service updates the user's notification preferences. If settings
+    don't exist, they will be created with the provided values.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+        settings_in: Updated settings fields (all optional)HH:MM format)
+            - reminder_days: Default reminder days
+
+    Returns:
+        MessageOut: Success message confirming the update.
+
+    Raises:
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         settings: NotificationSettings | None = await NotificationSettings.find_one({"owner_id": owner_id})
         
         if not settings:
-            settings: NotificationSettings = NotificationSettings(owner_id = owner_id)
+            settings = NotificationSettings(owner_id = owner_id)
         
         if settings_in.push_enabled is not None:
             settings.push_enabled = settings_in.push_enabled
@@ -265,6 +349,21 @@ async def send_test_notification_service(
     test_in:    TestNotificationIn
 ) -> TestNotificationOut:
     
+    """Sends a test notification to verify the user's notification setup.
+
+    This service creates and sends a test notification to the user's
+    configured channels to ensure they are working correctly.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+        test_in: Test Notification configuration 
+    Returns:
+        TestNotificationOut: Test results
+
+    Raises:
+        HTTPException 500: If an internal server error occurs.
+    """
+
     try:
 
         notification: Notification = Notification(
@@ -307,8 +406,24 @@ async def get_notification_history_service(
     limit:      int = 20
 ) -> NotificationHistoryOut:
     
+    """Retrieves the user's notification history.
+
+    This service returns a paginated list of past notifications sent to
+    the user, including delivery status and timestamps.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+        limit: Maximum number of history records to return (1-100). Defaults to 20.
+
+    Returns:
+        NotificationHistoryOut: Notification history 
+
+    Raises:
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
-        notifications: Notification | None = await Notification.find({
+        notifications: List[Notification] = await Notification.find({
             "owner_id": owner_id,
             "sent_at": {"$ne": None}
         }).sort("-sent_at").limit(limit).to_list()

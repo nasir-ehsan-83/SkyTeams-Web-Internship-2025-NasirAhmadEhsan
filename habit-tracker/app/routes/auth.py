@@ -50,16 +50,16 @@ router = APIRouter(
 
 @router.post(
     '/register',
-    response_mode = UserPrivateOut,
+    response_model = UserPrivateOut,
     status_code = status.HTTP_201_CREATED,
     summary = "Register a new user",
-    description = "Creates a new user account with the provided credentials. Email must be unique and password must meet security requirements."
+    description = "Creates a new user account with the provided credentials."
 )
 @limiter.limit('3/minute')
 async def create_user_route(
     request:    Request,
     response:   Response,
-    user_in:    Annotated[UserCreate, Body(..., description = "User registration data including email, password, and full name")]
+    user_in:    Annotated[UserCreate, Body(..., description = "User registration data including email, password, ...")]
 ) -> User:
     
     """Registers a new user account.
@@ -105,7 +105,7 @@ async def create_user_route(
 async def login_route(
     request:            Request,
     response:           Response,
-    user_credential:    Annotated[OAuth2PasswordRequestForm, Depends(description = "User credentials (username and password) in form format")]
+    user_credential:    Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Dict[str, Any]:
     
     """Authenticates a user and returns access tokens.
@@ -324,7 +324,7 @@ async def verify_email_route(
     - 500: Internal server error
 
     Args:
-        data: Verification token containing the user ID and verification code.
+        data: Verification token containing the user's email and verification code.
 
     Returns:
         str: Success message indicating email was verified.

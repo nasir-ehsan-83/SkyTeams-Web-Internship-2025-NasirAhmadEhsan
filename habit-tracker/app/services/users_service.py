@@ -32,6 +32,23 @@ from app.services.habits_service import get_all_habits_service
 async def get_user_service(
     id: BeanieObjectId
 ) -> User:
+    
+    """Retrieves a user by their unique identifier.
+
+    This service fetches a user document from the database using the
+    provided ID. Only active users (status = "active") are returned.
+
+    Args:
+        id: The MongoDB ObjectId of the user to retrieve.
+
+    Returns:
+        User: The User object with all user details.
+
+    Raises:
+        HTTPException 404: If user is not found or not active.
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
 
         user: User | None = await User.find_one(
@@ -65,6 +82,26 @@ async def update_user_service(
     id:     BeanieObjectId, 
     data:   UserUpdate
 ) -> User:
+    
+    """Updates a user's profile information.
+
+    This service allows users to update their profile details such as
+    username, full name, password, or other editable fields.
+
+    Args:
+        id: The MongoDB ObjectId of the user to update.
+        data: Updated user fields(all optional)
+
+    Returns:
+        User: The updated User object with all fields.
+
+    Raises:
+        HTTPException 404: If user is not found or not active.
+        HTTPException 500: If an internal server error occurs.
+
+    Note:
+        Passwords are automatically hashed before storage for security.
+    """
     
     try:
         user: User | None = await User.find_one(
@@ -114,6 +151,27 @@ async def update_avatar_service(
     url:    str
 ) -> User:
     
+    """Updates a user's avatar/profile picture URL.
+
+    This service allows users to change their profile picture by providing
+    a new image URL.
+
+    Args:
+        id: The MongoDB ObjectId of the user.
+        url: The new avatar image URL (must be a valid URL).
+
+    Returns:
+        User: The updated User object with new avatar URL.
+
+    Raises:
+        HTTPException 404: If user is not found or not active.
+        HTTPException 500: If an internal server error occurs.
+
+    Note:
+        The URL should point to a valid image resource. No validation
+        of the URL format or image availability is performed.
+    """
+
     try:
 
         user: User | None = await User.find_one(
@@ -152,6 +210,26 @@ async def get_stats_service(
     id:     BeanieObjectId
 ) -> Tuple[User, List[Habit]]:
     
+    """Retrieves comprehensive user statistics and habit data.
+
+    This service returns both user information and all associated habits,
+    providing a complete overview of the user's activity and progress.
+
+    Args:
+        id: The MongoDB ObjectId of the user.
+
+    Returns:
+        Tuple[User, List[Habit]]
+
+    Raises:
+        HTTPException 404: If user is not found or not active.
+        HTTPException 500: If an internal server error occurs.
+
+    Note:
+        This service uses get_all_habits_service to retrieve habits,
+        which includes pagination and filtering capabilities.
+    """
+    
     try:
         user: User | None = await User.find_one(
             User.id == BeanieObjectId(id),
@@ -186,6 +264,23 @@ async def get_stats_service(
 async def get_preference_service(
     owner_id: BeanieObjectId
 ) -> UserPreference:
+    
+    """Retrieves the user's preferences and settings.
+
+    This service returns all user preferences including notification
+    settings, theme preferences, and application configurations.
+
+    Args:
+        owner_id: The MongoDB ObjectId of the user.
+
+    Returns:
+        UserPreference: User preferences
+
+    Raises:
+        HTTPException 404: If no preferences are found for the user.
+        HTTPException 500: If an internal server error occurs.
+    """
+    
     try:
         preference: UserPreference | None = await UserPreference.find_one(UserPreference.owner_id == owner_id)
 
@@ -215,6 +310,28 @@ async def update_preference_service(
     user_id: BeanieObjectId,
     preference_data: PreferenceUpdate
 ) -> UserPreference:
+    
+    """Updates the user's preferences and settings.
+
+    This service allows users to customize their application experience
+    by updating preferences.
+
+    Args:
+        user_id: The MongoDB ObjectId of the user.
+        preference_data: Updated preference fields (all optional)
+
+    Returns:
+        UserPreference: The updated user preferences.
+
+    Raises:
+        HTTPException 404: If no preferences are found for the user.
+        HTTPException 500: If an internal server error occurs.
+
+    Note:
+        If preferences don't exist, consider creating them instead of
+        raising an exception. This could be implemented as an upsert operation.
+    """
+    
     try:
         preference: UserPreference | None = await UserPreference.find_one(UserPreference.owner_id == user_id)
 
@@ -240,4 +357,3 @@ async def update_preference_service(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
-

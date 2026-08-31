@@ -41,7 +41,17 @@ REFRESH_TOKEN_EXPIRE_DAYS:      int = settings.REFRESH_TOKEN_EXPIRE_DAYS
 async def create_access_token(
     data: Dict[str, str | int | datetime]
 ) -> str:
+    """Create a JWT access token.
 
+    Generates a short-lived access token for API authentication.
+    Token includes expiration time and type claim for validation.
+
+    Args:
+        data: Payload data to encode in the token (e.g., id, role).
+
+    Returns:
+        str: Encoded JWT access token.
+    """
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes = ACCESS_TOKEN_EXPIRE_MINUTES)
     
@@ -63,7 +73,21 @@ async def verify_access_token(
     token: str, 
     credentials_exception: HTTPException
 ) -> TokenData:
+    """Verify and decode a JWT access token.
 
+    Validates the token signature, expiration, and type claim.
+    Extracts user ID and role from the payload.
+
+    Args:
+        token: JWT access token to verify.
+        credentials_exception: Exception to raise on validation failure.
+
+    Returns:
+        TokenData: Decoded token data containing user ID and role.
+
+    Raises:
+        HTTPException: If token is invalid, expired, or malformed.
+    """
     try:
         payload: Dict[str, Any] = await run_in_threadpool(
             jwt.decode, 
@@ -110,7 +134,17 @@ async def verify_access_token(
 async def create_refresh_token(
     data: Dict[str, str | int | datetime]
 ) -> str:
+    """Create a JWT refresh token.
 
+    Generates a long-lived refresh token for obtaining new access tokens.
+    Token includes expiration time and type claim for validation.
+
+    Args:
+        data: Payload data to encode in the token (e.g., id, role).
+
+    Returns:
+        str: Encoded JWT refresh token.
+    """
     to_encode:  Dict[str, str | int | datetime] = data.copy()
     expire:     datetime = datetime.now(timezone.utc) + timedelta(days = REFRESH_TOKEN_EXPIRE_DAYS)
     
@@ -132,7 +166,22 @@ async def verify_refresh_token(
     token: str,
     credentials_exception: HTTPException = HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail = "Invalid refresh token")
 ) -> Dict[str, Any]:
-    
+    """Verify and decode a JWT refresh token.
+
+    Validates the token signature, expiration, and type claim.
+    Returns the full payload for further processing.
+
+    Args:
+        token: JWT refresh token to verify.
+        credentials_exception: Exception to raise on validation failure.
+
+    Returns:
+        Dict[str, Any]: Decoded token payload.
+
+    Raises:
+        HTTPException: If token is expired (401), invalid (401), 
+            or server error (500).
+    """
     try:
         payload: Dict[str, Any] = await run_in_threadpool(
             jwt.decode, 

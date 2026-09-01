@@ -12,6 +12,16 @@ async def send_email(
     email: str,
     verify_code: int
 ) -> None:
+    """Send verification email with HTML template.
+
+    Args:
+        email: Recipient email address.
+        verify_code: 6-digit verification code to send.
+
+    Logs:
+        - INFO: On successful email send.
+        - ERROR: On SMTP authentication failure or other errors.
+    """
     try:
 
         if not settings.SMTP_USER or not settings.SMTP_PASSWORD:

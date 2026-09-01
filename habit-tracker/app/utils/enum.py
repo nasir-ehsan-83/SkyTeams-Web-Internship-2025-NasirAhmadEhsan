@@ -3,6 +3,7 @@ from enum import Enum
 
 
 class UserRole(str, Enum):
+    """User roles for access control."""
 
     user        = "user"
     admin       = "admin"
@@ -10,7 +11,8 @@ class UserRole(str, Enum):
 
 
 class UserStatus(str, Enum):
-    
+    """User account status."""
+
     active      = "active"
     deleted     = "deleted"
     block       = "block"
@@ -18,7 +20,8 @@ class UserStatus(str, Enum):
 
 
 class HabitStatus(str, Enum):
-    
+    """Habit completion status."""
+
     pending     = "pending"
     completed   = "completed"
     skipped     = "skipped"
@@ -28,6 +31,7 @@ class HabitStatus(str, Enum):
 
 
 class HabitCategory(str, Enum):
+    """Habit categories for organization."""
 
     sport       = "sport"
     study       = "study"
@@ -41,6 +45,8 @@ class HabitCategory(str, Enum):
 
 
 class Timeframe(str, Enum):
+    """Time periods for analytics and filtering."""
+
     DAY         = "day"
     WEEK        = "week"
     MONTH       = "month"
